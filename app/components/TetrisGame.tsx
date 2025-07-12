@@ -62,11 +62,24 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
   };
 
   const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart) return;
+    
+    // If no touchEnd, it's a tap
+    if (!touchEnd) {
+      rotatePiece();
+      return;
+    }
     
     const deltaX = touchStart.x - touchEnd.x;
     const deltaY = touchStart.y - touchEnd.y;
     const minSwipeDistance = 50;
+    const tapThreshold = 10; // Small movement threshold for tap detection
+    
+    // Check if it's a tap (small movement)
+    if (Math.abs(deltaX) < tapThreshold && Math.abs(deltaY) < tapThreshold) {
+      rotatePiece();
+      return;
+    }
     
     // Determine swipe direction
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
@@ -227,7 +240,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         {/* Instructions */}
         <div className="text-center mb-2">
           <p className="text-slate-300 text-xs">
-            Swipe: ← → ↓(drop) | Double-tap: rotate | Space: drop | ↓: rotate | ↑: theme
+            Swipe: ← → ↓(drop) | Tap: rotate | Space: drop | ↓: rotate | ↑: theme
             {isRandomMode && <span className="text-yellow-400"> (Random condiments active!)</span>}
           </p>
         </div>
