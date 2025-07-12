@@ -1,5 +1,5 @@
 import React from 'react';
-import { Piece, ThemeBoard, CondimentTheme } from '../types/tetris';
+import { Piece, ThemeBoard } from '../types/tetris';
 import { useTheme, getThemedTexturePath } from '../contexts/ThemeContext';
 
 interface GameBoardProps {

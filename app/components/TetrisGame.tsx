@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useTetris } from '../hooks/useTetris';
-import { ThemeProvider, useTheme, CondimentTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import GameBoard from './GameBoard';
 import ThemeToggle from './ThemeToggle';
 import { Button } from '~/components/ui/button';

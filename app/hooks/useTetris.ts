@@ -28,7 +28,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
   const dropTime = useRef(INITIAL_DROP_TIME);
   const lastDrop = useRef(Date.now());
 
-  const createRandomPiece = (): Piece => {
+  const createRandomPiece = useCallback((): Piece => {
     const pieces = Object.keys(PIECES);
     const randomPiece = pieces[Math.floor(Math.random() * pieces.length)];
     const pieceTheme = isRandomMode ? getRandomTheme() : currentTheme;
@@ -41,7 +41,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
       y: 0,
       theme: pieceTheme
     };
-  };
+  }, [isRandomMode, getRandomTheme, currentTheme]);
 
   const isValidMove = useCallback((piece: Piece, deltaX: number, deltaY: number, newShape?: number[][]): boolean => {
     const shape = newShape || piece.shape;
@@ -150,7 +150,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     } else {
       setCurrentPiece(newPiece);
     }
-  }, [board, textureBoard, rotationBoard, level, isValidMove]);
+  }, [board, textureBoard, rotationBoard, themeBoard, level, isValidMove, createRandomPiece]);
 
   const movePiece = useCallback((deltaX: number, deltaY: number) => {
     if (!currentPiece || gameOver || paused) return;
@@ -161,7 +161,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
       // Piece hit bottom or another piece
       placePiece(currentPiece, currentPiece.theme || currentTheme);
     }
-  }, [currentPiece, gameOver, paused, isValidMove, placePiece]);
+  }, [currentPiece, gameOver, paused, isValidMove, placePiece, currentTheme]);
 
   const rotatePiece = useCallback(() => {
     if (!currentPiece || gameOver || paused) return;
@@ -205,7 +205,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
         }
       }, 50);
     }
-  }, [currentPiece, gameOver, paused, isValidMove, placePiece]);
+  }, [currentPiece, gameOver, paused, isValidMove, placePiece, currentTheme]);
 
   const startGame = useCallback(() => {
     if (gameOver) {
@@ -222,7 +222,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     }
     setPaused(false);
     lastDrop.current = Date.now();
-  }, [gameOver]);
+  }, [gameOver, createRandomPiece]);
 
   const pauseGame = useCallback(() => {
     setPaused(true);
@@ -255,7 +255,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
   // Initialize game
   useEffect(() => {
     setCurrentPiece(createRandomPiece());
-  }, []);
+  }, [createRandomPiece]);
 
   return {
     board,
