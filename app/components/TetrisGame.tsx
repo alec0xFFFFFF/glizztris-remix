@@ -31,16 +31,10 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     dropPiece, 
     startGame, 
     pauseGame,
-    resetGame,
-    updateCurrentPieceTheme
+    resetGame
   } = useTetris(currentTheme, isRandomMode, getRandomTheme);
 
-  // Update current piece theme when theme changes (only in manual mode)
-  React.useEffect(() => {
-    if (!isRandomMode && currentPiece) {
-      updateCurrentPieceTheme(currentTheme);
-    }
-  }, [currentTheme, isRandomMode, currentPiece, updateCurrentPieceTheme]);
+  // Note: Removed theme updating effect to prevent board freezing issues
 
   // Touch gesture handling
   const [touchStart, setTouchStart] = React.useState<{ x: number; y: number } | null>(null);
