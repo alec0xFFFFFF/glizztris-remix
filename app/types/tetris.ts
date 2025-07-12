@@ -1,3 +1,5 @@
+export type CondimentTheme = 'mustard' | 'ketchup' | 'relish';
+
 export interface Piece {
   shape: number[][];
   type: number;
@@ -5,9 +7,11 @@ export interface Piece {
   y: number;
   textures: string[][];
   rotations: number[][];
+  theme?: CondimentTheme; // Theme when piece was placed
 }
 
 export type Board = (number | null)[][];
+export type ThemeBoard = (CondimentTheme | null)[][]; // Track theme for each placed piece
 
 export const PIECES: { [key: string]: { shape: number[][], type: number, textures: string[][], rotations: number[][] } } = {
   // I-piece (Long Hot Dog) - 4x block.png
@@ -101,7 +105,7 @@ export const PIECES: { [key: string]: { shape: number[][], type: number, texture
     type: 5,
     textures: [
       ['block', '', ''],           // top row: single block
-      ['elbow-left', 'block', 'block']  // bottom row: elbow curves up-to-right, then 2 blocks continue
+      ['elbow-right', 'block', 'block']  // bottom row: elbow curves up-to-right, then 2 blocks continue
     ],
     rotations: [
       [90, 0, 0],

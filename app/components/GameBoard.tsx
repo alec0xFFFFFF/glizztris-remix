@@ -1,40 +1,21 @@
 import React from 'react';
-import { Piece } from '../types/tetris';
+import { Piece, ThemeBoard, CondimentTheme } from '../types/tetris';
+import { useTheme, getThemedTexturePath } from '../contexts/ThemeContext';
 
 interface GameBoardProps {
   board: (number | null)[][];
   textureBoard: (string | null)[][];
   rotationBoard: (number | null)[][];
+  themeBoard: ThemeBoard;
   animatingLines: number[];
   currentPiece: Piece | null;
   gameOver: boolean;
 }
 
-// Function to get the texture path from texture name
-const getTextureImage = (textureName: string) => {
-  switch (textureName) {
-    case 'block':
-      return '/glizztris-pieces/glizz-tris-block.png';
-    case 'elbow-right':
-      return '/glizztris-pieces/glizz-tris-block-elbow-right.png';
-    case 'elbow-left':
-      return '/glizztris-pieces/glizz-tris-block-elbow-left.png';
-    case 't-center':
-      return '/glizztris-pieces/glizz-tris-block-t-center.png';
-    case 'top_left':
-      return '/glizztris-pieces/glizz-tris-block_top_left.png';
-    case 'top_right':
-      return '/glizztris-pieces/glizz-tris-block_top_right.png';
-    case 'bottom_left':
-      return '/glizztris-pieces/glizz-tris-block_bottom_left.png';
-    case 'bottom_right':
-      return '/glizztris-pieces/glizz-tris-block_bottom_right.png';
-    default:
-      return '/glizztris-pieces/glizz-tris-block.png';
-  }
-};
+// This function is now replaced by getThemedTexturePath from ThemeContext
 
-const GameBoard: React.FC<GameBoardProps> = ({ board, textureBoard, rotationBoard, animatingLines, currentPiece, gameOver }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ board, textureBoard, rotationBoard, themeBoard, animatingLines, currentPiece, gameOver }) => {
+  const { currentTheme } = useTheme();
   const renderBoard = () => {
     const displayBoard = board.map(row => [...row]);
     const displayTextureBoard = textureBoard.map(row => [...row]);
@@ -85,7 +66,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ board, textureBoard, rotationBoar
           >
             {cell !== null && displayTextureBoard[y][x] && (
               <img
-                src={getTextureImage(displayTextureBoard[y][x]!)}
+                src={getThemedTexturePath(
+                  displayTextureBoard[y][x]!,
+                  isPieceBoard[y][x] 
+                    ? (currentPiece?.theme || currentTheme) // Use falling piece's assigned theme
+                    : (themeBoard[y][x] || currentTheme) // Use placed piece's original theme or current theme
+                )}
                 alt="Hot dog piece"
                 className="w-full h-full object-cover"
                 style={{ 

@@ -1,6 +1,8 @@
-import React, { useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useTetris } from '../hooks/useTetris';
+import { ThemeProvider, useTheme, CondimentTheme } from '../contexts/ThemeContext';
 import GameBoard from './GameBoard';
+import ThemeToggle from './ThemeToggle';
 import { Button } from '~/components/ui/button';
 
 export interface TetrisGameRef {
@@ -11,10 +13,12 @@ export interface TetrisGameRef {
 
 export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
   function TetrisGame({ onClose }, ref) {
+  const { currentTheme, nextTheme, isRandomMode, getRandomTheme } = useTheme();
   const { 
     board, 
     textureBoard,
     rotationBoard,
+    themeBoard,
     animatingLines,
     currentPiece, 
     score, 
@@ -27,8 +31,16 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     dropPiece, 
     startGame, 
     pauseGame,
-    resetGame 
-  } = useTetris();
+    resetGame,
+    updateCurrentPieceTheme
+  } = useTetris(currentTheme, isRandomMode, getRandomTheme);
+
+  // Update current piece theme when theme changes (only in manual mode)
+  React.useEffect(() => {
+    if (!isRandomMode && currentPiece) {
+      updateCurrentPieceTheme(currentTheme);
+    }
+  }, [currentTheme, isRandomMode, currentPiece, updateCurrentPieceTheme]);
 
   // Touch gesture handling
   const [touchStart, setTouchStart] = React.useState<{ x: number; y: number } | null>(null);
@@ -107,10 +119,10 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         break;
       case 'ArrowUp':
         event.preventDefault();
-        dropPiece();
+        nextTheme();
         break;
     }
-  }, [gameOver, paused, movePiece, rotatePiece, dropPiece]);
+  }, [gameOver, paused, movePiece, rotatePiece, dropPiece, nextTheme]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -135,6 +147,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
               GLIZZTRIS
             </h2>
           </div>
+          <ThemeToggle />
         </div>
         {onClose && (
           <Button variant="outline" onClick={onClose} className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs px-2 py-1">
@@ -169,6 +182,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
             board={board}
             textureBoard={textureBoard}
             rotationBoard={rotationBoard}
+            themeBoard={themeBoard}
             animatingLines={animatingLines}
             currentPiece={currentPiece}
             gameOver={gameOver}
@@ -213,7 +227,8 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         {/* Instructions */}
         <div className="text-center mb-2">
           <p className="text-slate-300 text-xs">
-            Swipe: ← → ↓(drop) | Double-tap: rotate | Space: drop | ↓: rotate
+            Swipe: ← → ↓(drop) | Double-tap: rotate | Space: drop | ↓: rotate | ↑: theme
+            {isRandomMode && <span className="text-yellow-400"> (Random condiments active!)</span>}
           </p>
         </div>
         

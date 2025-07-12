@@ -1,5 +1,6 @@
 import type { MetaFunction } from "@remix-run/node";
 import { TetrisGame } from "~/components/TetrisGame";
+import { ThemeProvider } from "~/contexts/ThemeContext";
 
 export const meta: MetaFunction = () => {
   return [
@@ -9,5 +10,9 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
-  return <TetrisGame />;
+  return (
+    <ThemeProvider>
+      <TetrisGame />
+    </ThemeProvider>
+  );
 }

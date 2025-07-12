@@ -85,6 +85,19 @@
 
 ## 🎨 UI/UX Improvements
 
+### Theming & Customization
+- [ ] **Condiment Theme Toggle**
+  - [ ] Create condiment-themed piece textures
+    - **Relish**: Green-tinted hot dog pieces
+    - **Mustard**: Yellow/golden hot dog pieces  
+    - **Ketchup**: Red-tinted hot dog pieces
+    - **Classic**: Original hot dog textures
+  - [ ] Add theme selector in settings/menu
+  - [ ] Implement theme persistence in local storage
+  - [ ] Update piece texture loading system to support themes
+  - [ ] Add theme preview in selector
+  - [ ] Consider theme-specific UI color schemes
+
 ### Game Board Enhancements
 - [x] Fix container border to fit game board properly
 - [ ] Add particle effects for line clears
@@ -116,6 +129,25 @@
 - [ ] Add TypeScript strict mode compliance
 - [ ] Implement proper error boundaries
 - [ ] Add unit tests for game logic
+
+### Theming System
+- [ ] Create theme configuration interface
+  ```typescript
+  interface GameTheme {
+    id: string;
+    name: string;
+    pieceTextures: Record<string, string>;
+    uiColors?: {
+      primary: string;
+      secondary: string;
+      accent: string;
+    };
+  }
+  ```
+- [ ] Implement theme context provider
+- [ ] Create theme switching utilities
+- [ ] Add theme-aware texture loading in GameBoard
+- [ ] Create condiment-specific texture assets
 
 ### Data Persistence
 - [ ] Implement settings persistence

@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PIECES, Piece, Board } from '../types/tetris';
+import { PIECES, Piece, Board, ThemeBoard, CondimentTheme } from '../types/tetris';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const INITIAL_DROP_TIME = 1000;
 
-export const useTetris = () => {
+export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode: boolean = false, getRandomTheme: () => CondimentTheme = () => 'mustard') => {
   const [board, setBoard] = useState<Board>(() => 
+    Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null))
+  );
+  const [themeBoard, setThemeBoard] = useState<ThemeBoard>(() => 
     Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null))
   );
   const [textureBoard, setTextureBoard] = useState<(string | null)[][]>(() => 
@@ -28,13 +31,15 @@ export const useTetris = () => {
   const createRandomPiece = (): Piece => {
     const pieces = Object.keys(PIECES);
     const randomPiece = pieces[Math.floor(Math.random() * pieces.length)];
+    const pieceTheme = isRandomMode ? getRandomTheme() : currentTheme;
     return {
       shape: PIECES[randomPiece].shape,
       type: PIECES[randomPiece].type,
       textures: PIECES[randomPiece].textures,
       rotations: PIECES[randomPiece].rotations,
       x: 4,
-      y: 0
+      y: 0,
+      theme: pieceTheme
     };
   };
 
@@ -62,10 +67,11 @@ export const useTetris = () => {
     return true;
   }, [board]);
 
-  const placePiece = useCallback((piece: Piece) => {
+  const placePiece = useCallback((piece: Piece, theme: CondimentTheme) => {
     const newBoard = board.map(row => [...row]);
     const newTextureBoard = textureBoard.map(row => [...row]);
     const newRotationBoard = rotationBoard.map(row => [...row]);
+    const newThemeBoard = themeBoard.map(row => [...row]);
     
     piece.shape.forEach((row, y) => {
       row.forEach((cell, x) => {
@@ -76,6 +82,7 @@ export const useTetris = () => {
             newBoard[boardY][boardX] = piece.type;
             newTextureBoard[boardY][boardX] = piece.textures[y][x];
             newRotationBoard[boardY][boardX] = piece.rotations[y][x];
+            newThemeBoard[boardY][boardX] = theme;
           }
         }
       });
@@ -92,6 +99,7 @@ export const useTetris = () => {
     setBoard(newBoard);
     setTextureBoard(newTextureBoard);
     setRotationBoard(newRotationBoard);
+    setThemeBoard(newThemeBoard);
 
     // If there are completed lines, animate them
     if (completedLines.length > 0) {
@@ -102,6 +110,7 @@ export const useTetris = () => {
         const finalBoard = newBoard.map(row => [...row]);
         const finalTextureBoard = newTextureBoard.map(row => [...row]);
         const finalRotationBoard = newRotationBoard.map(row => [...row]);
+        const finalThemeBoard = newThemeBoard.map(row => [...row]);
         
         // Remove completed lines (process from bottom to top to avoid index shifting)
         completedLines.sort((a, b) => b - a).forEach(lineIndex => {
@@ -111,26 +120,27 @@ export const useTetris = () => {
           finalTextureBoard.unshift(Array(BOARD_WIDTH).fill(null));
           finalRotationBoard.splice(lineIndex, 1);
           finalRotationBoard.unshift(Array(BOARD_WIDTH).fill(null));
+          finalThemeBoard.splice(lineIndex, 1);
+          finalThemeBoard.unshift(Array(BOARD_WIDTH).fill(null));
         });
 
         setBoard(finalBoard);
         setTextureBoard(finalTextureBoard);
         setRotationBoard(finalRotationBoard);
+        setThemeBoard(finalThemeBoard);
         setAnimatingLines([]);
+        
+        // Update score and lines after clearing
+        const lineScore = [0, 40, 100, 300, 1200][completedLines.length] * level;
+        setScore(prev => prev + lineScore);
+        setLines(prev => {
+          const newLines = prev + completedLines.length;
+          const newLevel = Math.floor(newLines / 10) + 1;
+          setLevel(newLevel);
+          dropTime.current = Math.max(50, INITIAL_DROP_TIME - (newLevel - 1) * 50);
+          return newLines;
+        });
       }, 350);
-    }
-    
-    // Update score and lines
-    if (completedLines.length > 0) {
-      const lineScore = [0, 40, 100, 300, 1200][completedLines.length] * level;
-      setScore(prev => prev + lineScore);
-      setLines(prev => {
-        const newLines = prev + completedLines.length;
-        const newLevel = Math.floor(newLines / 10) + 1;
-        setLevel(newLevel);
-        dropTime.current = Math.max(50, INITIAL_DROP_TIME - (newLevel - 1) * 50);
-        return newLines;
-      });
     }
 
     // Check game over
@@ -149,7 +159,7 @@ export const useTetris = () => {
       setCurrentPiece(prev => prev ? { ...prev, x: prev.x + deltaX, y: prev.y + deltaY } : null);
     } else if (deltaY > 0) {
       // Piece hit bottom or another piece
-      placePiece(currentPiece);
+      placePiece(currentPiece, currentPiece.theme || currentTheme);
     }
   }, [currentPiece, gameOver, paused, isValidMove, placePiece]);
 
@@ -191,7 +201,7 @@ export const useTetris = () => {
       setCurrentPiece(prev => prev ? { ...prev, y: prev.y + dropDistance } : null);
       setTimeout(() => {
         if (currentPiece) {
-          placePiece({ ...currentPiece, y: currentPiece.y + dropDistance });
+          placePiece({ ...currentPiece, y: currentPiece.y + dropDistance }, currentPiece.theme || currentTheme);
         }
       }, 50);
     }
@@ -202,6 +212,7 @@ export const useTetris = () => {
       setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setTextureBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setRotationBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
+      setThemeBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setCurrentPiece(createRandomPiece());
       setScore(0);
       setLevel(1);
@@ -218,9 +229,12 @@ export const useTetris = () => {
   }, []);
 
   const resetGame = useCallback(() => {
-    setGameOver(true);
     startGame();
   }, [startGame]);
+
+  const updateCurrentPieceTheme = useCallback((newTheme: CondimentTheme) => {
+    setCurrentPiece(prev => prev ? { ...prev, theme: newTheme } : null);
+  }, []);
 
   // Game loop
   useEffect(() => {
@@ -247,6 +261,7 @@ export const useTetris = () => {
     board,
     textureBoard,
     rotationBoard,
+    themeBoard,
     animatingLines,
     currentPiece,
     score,
@@ -259,6 +274,7 @@ export const useTetris = () => {
     dropPiece,
     startGame,
     pauseGame,
-    resetGame
+    resetGame,
+    updateCurrentPieceTheme
   };
 };
