@@ -72,8 +72,8 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
       // Vertical swipe
       if (Math.abs(deltaY) > minSwipeDistance) {
         if (deltaY < 0) {
-          // Swipe down
-          movePiece(0, 1);
+          // Swipe down - drop piece
+          dropPiece();
         }
       }
     }
@@ -99,11 +99,11 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         break;
       case 'ArrowDown':
         event.preventDefault();
-        movePiece(0, 1);
+        rotatePiece();
         break;
       case ' ':
         event.preventDefault();
-        rotatePiece();
+        dropPiece();
         break;
       case 'ArrowUp':
         event.preventDefault();
@@ -213,7 +213,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         {/* Instructions */}
         <div className="text-center mb-2">
           <p className="text-slate-300 text-xs">
-            Swipe board: ← → ↓ | Double-tap: rotate
+            Swipe: ← → ↓(drop) | Double-tap: rotate | Space: drop | ↓: rotate
           </p>
         </div>
         
@@ -230,16 +230,16 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
             ←
           </button>
           
-          {/* Down */}
+          {/* Rotate */}
           <button
             onTouchStart={(e) => {
               e.preventDefault();
-              movePiece(0, 1);
+              rotatePiece();
             }}
-            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 px-2 rounded border-2 border-blue-800 transition-colors text-sm"
+            className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-2 px-2 rounded border-2 border-purple-800 transition-colors text-sm"
             style={{ fontFamily: 'monospace' }}
           >
-            ↓
+            ↻
           </button>
           
           {/* Right */}
@@ -254,16 +254,16 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
             →
           </button>
           
-          {/* Rotate */}
+          {/* Soft Drop */}
           <button
             onTouchStart={(e) => {
               e.preventDefault();
-              rotatePiece();
+              movePiece(0, 1);
             }}
-            className="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-2 px-2 rounded border-2 border-purple-800 transition-colors text-sm"
+            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2 px-2 rounded border-2 border-blue-800 transition-colors text-sm"
             style={{ fontFamily: 'monospace' }}
           >
-            ↻
+            ↓
           </button>
         </div>
         
