@@ -2,7 +2,7 @@ import React from 'react';
 import { useTheme, CondimentTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle: React.FC = () => {
-  const { currentTheme, setTheme, isRandomMode } = useTheme();
+  const { currentTheme, setTheme, isRandomMode, resetToRandomMode } = useTheme();
 
   const themes: { value: CondimentTheme; label: string; emoji: string; color: string }[] = [
     { value: 'mustard', label: 'Mustard', emoji: '🟡', color: 'bg-yellow-500' },
@@ -35,6 +35,14 @@ const ThemeToggle: React.FC = () => {
           {theme.emoji}
         </button>
       ))}
+      {/* Debug button - remove in production */}
+      <button
+        onClick={resetToRandomMode}
+        className="ml-2 px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500"
+        title="Reset to Random Mode (Debug)"
+      >
+        🎲
+      </button>
     </div>
   );
 };

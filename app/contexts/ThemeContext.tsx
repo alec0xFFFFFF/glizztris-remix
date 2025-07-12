@@ -8,6 +8,7 @@ interface ThemeContextType {
   nextTheme: () => void;
   isRandomMode: boolean;
   getRandomTheme: () => CondimentTheme;
+  resetToRandomMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,9 +30,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       setCurrentTheme(savedTheme);
     }
     
-    // If user has previously selected a theme, disable random mode
-    if (savedRandomMode !== null) {
-      setIsRandomMode(savedRandomMode === 'true');
+    // Only disable random mode if it was explicitly set to false
+    if (savedRandomMode === 'false') {
+      setIsRandomMode(false);
     }
   }, []);
 
@@ -57,8 +58,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     return themes[Math.floor(Math.random() * themes.length)];
   };
 
+  // Reset to random mode (for testing/debugging)
+  const resetToRandomMode = () => {
+    setIsRandomMode(true);
+    localStorage.removeItem('glizztris-random-mode');
+    localStorage.removeItem('glizztris-theme');
+    setCurrentTheme('mustard');
+  };
+
   return (
-    <ThemeContext.Provider value={{ currentTheme, setTheme, nextTheme, isRandomMode, getRandomTheme }}>
+    <ThemeContext.Provider value={{ currentTheme, setTheme, nextTheme, isRandomMode, getRandomTheme, resetToRandomMode }}>
       {children}
     </ThemeContext.Provider>
   );
