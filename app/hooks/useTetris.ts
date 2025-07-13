@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { PIECES, Piece, Board, ThemeBoard, CondimentTheme } from '../types/tetris';
+import { PIECES, Piece, Board, ThemeBoard, CondimentTheme, CondimentStats } from '../types/tetris';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
@@ -25,6 +25,12 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
   const [lines, setLines] = useState(0);
   const [gameOver, setGameOver] = useState(true);
   const [paused, setPaused] = useState(false);
+  
+  // Condiment tracking stats
+  const [condimentStats, setCondimentStats] = useState<CondimentStats>({
+    blocksUsed: { mustard: 0, ketchup: 0, relish: 0 },
+    blocksCompleted: { mustard: 0, ketchup: 0, relish: 0 }
+  });
   const dropTime = useRef(INITIAL_DROP_TIME);
   const lastDrop = useRef(Date.now());
   const currentThemeRef = useRef(currentTheme);
@@ -111,34 +117,73 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     setRotationBoard(newRotationBoard);
     setThemeBoard(newThemeBoard);
 
+    // Track blocks used for this piece
+    const blocksInPiece = piece.shape.flat().filter(cell => cell !== 0).length;
+    setCondimentStats(prev => ({
+      ...prev,
+      blocksUsed: {
+        ...prev.blocksUsed,
+        [theme]: prev.blocksUsed[theme] + blocksInPiece
+      }
+    }));
+
     // If there are completed lines, animate them
     if (completedLines.length > 0) {
       setAnimatingLines(completedLines);
       
       // Wait 350ms, then clear the lines
       setTimeout(() => {
-        const finalBoard = newBoard.map(row => [...row]);
-        const finalTextureBoard = newTextureBoard.map(row => [...row]);
-        const finalRotationBoard = newRotationBoard.map(row => [...row]);
-        const finalThemeBoard = newThemeBoard.map(row => [...row]);
-        
-        // Remove completed lines (process from bottom to top to avoid index shifting)
-        completedLines.sort((a, b) => b - a).forEach(lineIndex => {
-          finalBoard.splice(lineIndex, 1);
-          finalBoard.unshift(Array(BOARD_WIDTH).fill(null));
-          finalTextureBoard.splice(lineIndex, 1);
-          finalTextureBoard.unshift(Array(BOARD_WIDTH).fill(null));
-          finalRotationBoard.splice(lineIndex, 1);
-          finalRotationBoard.unshift(Array(BOARD_WIDTH).fill(null));
-          finalThemeBoard.splice(lineIndex, 1);
-          finalThemeBoard.unshift(Array(BOARD_WIDTH).fill(null));
+        // Track completed blocks by theme BEFORE removing lines
+        const completedBlocksCount = { mustard: 0, ketchup: 0, relish: 0 };
+        completedLines.forEach(lineIndex => {
+          for (let x = 0; x < BOARD_WIDTH; x++) {
+            const theme = newThemeBoard[lineIndex][x];
+            if (theme) {
+              completedBlocksCount[theme]++;
+            }
+          }
         });
 
-        setBoard(finalBoard);
-        setTextureBoard(finalTextureBoard);
-        setRotationBoard(finalRotationBoard);
-        setThemeBoard(finalThemeBoard);
+        // Create new boards with completed lines removed
+        const completedSet = new Set(completedLines);
+        const remainingBoard: (number | null)[][] = [];
+        const remainingTextureBoard: (string | null)[][] = [];
+        const remainingRotationBoard: (number | null)[][] = [];
+        const remainingThemeBoard: (CondimentTheme | null)[][] = [];
+        
+        // Keep only non-completed lines
+        for (let i = 0; i < BOARD_HEIGHT; i++) {
+          if (!completedSet.has(i)) {
+            remainingBoard.push([...newBoard[i]]);
+            remainingTextureBoard.push([...newTextureBoard[i]]);
+            remainingRotationBoard.push([...newRotationBoard[i]]);
+            remainingThemeBoard.push([...newThemeBoard[i]]);
+          }
+        }
+        
+        // Add empty lines at the top
+        const emptyLinesNeeded = completedLines.length;
+        for (let i = 0; i < emptyLinesNeeded; i++) {
+          remainingBoard.unshift(Array(BOARD_WIDTH).fill(null));
+          remainingTextureBoard.unshift(Array(BOARD_WIDTH).fill(null));
+          remainingRotationBoard.unshift(Array(BOARD_WIDTH).fill(null));
+          remainingThemeBoard.unshift(Array(BOARD_WIDTH).fill(null));
+        }
+
+        setBoard(remainingBoard);
+        setTextureBoard(remainingTextureBoard);
+        setRotationBoard(remainingRotationBoard);
+        setThemeBoard(remainingThemeBoard);
         setAnimatingLines([]);
+        
+        setCondimentStats(prev => ({
+          ...prev,
+          blocksCompleted: {
+            mustard: prev.blocksCompleted.mustard + completedBlocksCount.mustard,
+            ketchup: prev.blocksCompleted.ketchup + completedBlocksCount.ketchup,
+            relish: prev.blocksCompleted.relish + completedBlocksCount.relish
+          }
+        }));
         
         // Update score and lines after clearing
         const lineScore = [0, 40, 100, 300, 1200][completedLines.length] * level;
@@ -227,6 +272,10 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
       setScore(0);
       setLevel(1);
       setLines(0);
+      setCondimentStats({
+        blocksUsed: { mustard: 0, ketchup: 0, relish: 0 },
+        blocksCompleted: { mustard: 0, ketchup: 0, relish: 0 }
+      });
       setGameOver(false);
       dropTime.current = INITIAL_DROP_TIME;
     }
@@ -279,6 +328,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     lines,
     gameOver,
     paused,
+    condimentStats,
     movePiece,
     rotatePiece,
     dropPiece,

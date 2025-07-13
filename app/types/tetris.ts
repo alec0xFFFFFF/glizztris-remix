@@ -13,6 +13,11 @@ export interface Piece {
 export type Board = (number | null)[][];
 export type ThemeBoard = (CondimentTheme | null)[][]; // Track theme for each placed piece
 
+export interface CondimentStats {
+  blocksUsed: Record<CondimentTheme, number>;
+  blocksCompleted: Record<CondimentTheme, number>;
+}
+
 export const PIECES: { [key: string]: { shape: number[][], type: number, textures: string[][], rotations: number[][] } } = {
   // I-piece (Long Hot Dog) - 4x block.png
   I: {

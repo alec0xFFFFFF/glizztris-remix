@@ -26,6 +26,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     lines, 
     gameOver, 
     paused,
+    condimentStats,
     movePiece, 
     rotatePiece, 
     dropPiece, 
@@ -171,6 +172,27 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
             <div>SCORE: {score.toLocaleString()}</div>
             <div>LVL: {level}</div>
             <div>FOOT LONGS COMPLETED: {lines}</div>
+          </div>
+        </div>
+
+        {/* Condiment Stats */}
+        <div className="w-full max-w-xs mb-2">
+          <div className="grid grid-cols-3 gap-1 text-xs" style={{ fontFamily: 'monospace' }}>
+            <div className="text-center">
+              <div className="text-yellow-400 font-bold">🟡 MUSTARD</div>
+              <div className="text-yellow-300">Used: {condimentStats.blocksUsed.mustard}</div>
+              <div className="text-yellow-200">Done: {condimentStats.blocksCompleted.mustard}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-red-400 font-bold">🔴 KETCHUP</div>
+              <div className="text-red-300">Used: {condimentStats.blocksUsed.ketchup}</div>
+              <div className="text-red-200">Done: {condimentStats.blocksCompleted.ketchup}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-green-400 font-bold">🟢 RELISH</div>
+              <div className="text-green-300">Used: {condimentStats.blocksUsed.relish}</div>
+              <div className="text-green-200">Done: {condimentStats.blocksCompleted.relish}</div>
+            </div>
           </div>
         </div>
 
