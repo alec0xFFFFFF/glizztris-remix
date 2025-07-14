@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useTetris } from '../hooks/useTetris';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, getThemedTexturePath } from '../contexts/ThemeContext';
 import GameBoard from './GameBoard';
 import ThemeToggle from './ThemeToggle';
 import { Button } from '~/components/ui/button';
@@ -20,8 +20,11 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     rotationBoard,
     themeBoard,
     animatingLines,
-    currentPiece, 
-    score, 
+    currentPiece,
+    nextPiece, 
+    score,
+    highScore,
+    isNewHighScore, 
     level, 
     lines, 
     gameOver, 
@@ -31,21 +34,21 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     rotatePiece, 
     dropPiece, 
     startGame, 
-    pauseGame,
-    resetGame
+    pauseGame
   } = useTetris(currentTheme, isRandomMode, getRandomTheme);
 
   // Note: Removed theme updating effect to prevent board freezing issues
 
   // Touch gesture handling
-  const [touchStart, setTouchStart] = React.useState<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = React.useState<{ x: number; y: number } | null>(null);
+  const [touchStart, setTouchStart] = React.useState<{ x: number; y: number; time: number } | null>(null);
+  const [touchEnd, setTouchEnd] = React.useState<{ x: number; y: number; time: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart({
       x: e.targetTouches[0].clientX,
       y: e.targetTouches[0].clientY,
+      time: Date.now()
     });
   };
 
@@ -53,6 +56,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     setTouchEnd({
       x: e.targetTouches[0].clientX,
       y: e.targetTouches[0].clientY,
+      time: Date.now()
     });
   };
 
@@ -76,16 +80,27 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
       return;
     }
     
+    // Calculate swipe time and velocity
+    const swipeTime = touchEnd.time - touchStart.time;
+    const velocityX = Math.abs(deltaX) / swipeTime;
+    
     // Determine swipe direction
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       // Horizontal swipe
       if (Math.abs(deltaX) > minSwipeDistance) {
+        // Calculate blocks to move based on velocity (faster swipe = more blocks)
+        const blocksToMove = velocityX > 1.0 ? 3 : velocityX > 0.5 ? 2 : 1;
+        
         if (deltaX > 0) {
           // Swipe left
-          movePiece(-1, 0);
+          for (let i = 0; i < blocksToMove; i++) {
+            movePiece(-1, 0);
+          }
         } else {
           // Swipe right
-          movePiece(1, 0);
+          for (let i = 0; i < blocksToMove; i++) {
+            movePiece(1, 0);
+          }
         }
       }
     } else {
@@ -137,12 +152,66 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
 
-  // Start game on mount
-  useEffect(() => {
-    if (gameOver) {
-      startGame();
-    }
-  }, [gameOver, startGame]);
+  // Don't auto-start - wait for user to start
+
+  // Render next piece preview
+  const renderNextPiece = () => {
+    if (!nextPiece) return null;
+    
+    const previewGrid = Array(4).fill(null).map(() => Array(4).fill(null));
+    
+    // Center the piece in the preview
+    const offsetY = Math.floor((4 - nextPiece.shape.length) / 2);
+    const offsetX = Math.floor((4 - nextPiece.shape[0].length) / 2);
+    
+    return (
+      <div className="bg-black/50 p-2 rounded-lg border-2 border-yellow-600">
+        <div className="text-yellow-400 text-xs font-bold mb-1 text-center" style={{ fontFamily: 'monospace' }}>
+          NEXT
+        </div>
+        <div className="grid grid-rows-4 gap-0.5">
+          {previewGrid.map((row, y) => (
+            <div key={y} className="flex gap-0.5">
+              {row.map((_, x) => {
+                const pieceY = y - offsetY;
+                const pieceX = x - offsetX;
+                const isPartOfPiece = 
+                  pieceY >= 0 && 
+                  pieceY < nextPiece.shape.length && 
+                  pieceX >= 0 && 
+                  pieceX < nextPiece.shape[0].length && 
+                  nextPiece.shape[pieceY][pieceX];
+                
+                return (
+                  <div
+                    key={x}
+                    className={`w-4 h-4 ${isPartOfPiece ? 'border border-gray-600' : ''}`}
+                    style={{ imageRendering: 'pixelated' }}
+                  >
+                    {isPartOfPiece && (
+                      <img
+                        src={getThemedTexturePath(
+                          nextPiece.textures[pieceY][pieceX],
+                          nextPiece.theme || currentTheme
+                        )}
+                        alt="Next piece"
+                        className="w-full h-full object-cover"
+                        style={{ 
+                          imageRendering: 'pixelated',
+                          transform: nextPiece.rotations[pieceY][pieceX] ? 
+                            `rotate(${nextPiece.rotations[pieceY][pieceX]}deg)` : undefined
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-50 touch-none">
@@ -167,62 +236,123 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
       {/* Game Area */}
       <div className="flex-1 flex flex-col items-center justify-start p-1 bg-gradient-to-br from-slate-900 to-slate-800">
         {/* Score Info */}
-        <div className="w-full max-w-xs mb-2">
+        <div className="w-full max-w-lg mb-2">
           <div className="flex justify-between text-yellow-400 text-xs font-bold" style={{ fontFamily: 'monospace' }}>
             <div>SCORE: {score.toLocaleString()}</div>
+            <div>HIGH: {highScore.toLocaleString()}</div>
             <div>LVL: {level}</div>
-            <div>FOOT LONGS COMPLETED: {lines}</div>
+            <div>FOOT LONGS: {lines}</div>
           </div>
         </div>
 
-        {/* Condiment Stats */}
-        <div className="w-full max-w-xs mb-2">
-          <div className="grid grid-cols-3 gap-1 text-xs" style={{ fontFamily: 'monospace' }}>
-            <div className="text-center">
-              <div className="text-yellow-400 font-bold">🟡 MUSTARD</div>
-              <div className="text-yellow-300">Used: {condimentStats.blocksUsed.mustard}</div>
-              <div className="text-yellow-200">Done: {condimentStats.blocksCompleted.mustard}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-red-400 font-bold">🔴 KETCHUP</div>
-              <div className="text-red-300">Used: {condimentStats.blocksUsed.ketchup}</div>
-              <div className="text-red-200">Done: {condimentStats.blocksCompleted.ketchup}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-green-400 font-bold">🟢 RELISH</div>
-              <div className="text-green-300">Used: {condimentStats.blocksUsed.relish}</div>
-              <div className="text-green-200">Done: {condimentStats.blocksCompleted.relish}</div>
+        {/* Main Game Container */}
+        <div className="flex gap-4 items-start">
+          {/* Left Column - Game Board */}
+          <div className="flex flex-col items-center">
+            {/* Condiment Stats - hide during game over */}
+            {!gameOver && (
+              <div className="w-full max-w-xs mb-2">
+                <div className="grid grid-cols-3 gap-1 text-xs" style={{ fontFamily: 'monospace' }}>
+                  <div className="text-center">
+                    <div className="text-yellow-400 font-bold">🟡 MUSTARD</div>
+                    <div className="text-yellow-300">Used: {condimentStats.blocksUsed.mustard}</div>
+                    <div className="text-yellow-200">Done: {condimentStats.blocksCompleted.mustard}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-red-400 font-bold">🔴 KETCHUP</div>
+                    <div className="text-red-300">Used: {condimentStats.blocksUsed.ketchup}</div>
+                    <div className="text-red-200">Done: {condimentStats.blocksCompleted.ketchup}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-green-400 font-bold">🟢 RELISH</div>
+                    <div className="text-green-300">Used: {condimentStats.blocksUsed.relish}</div>
+                    <div className="text-green-200">Done: {condimentStats.blocksCompleted.relish}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Game Board */}
+            <div 
+              className="mb-2 flex items-center justify-center" 
+              style={{
+                imageRendering: 'pixelated'
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onDoubleClick={() => rotatePiece()}
+            >
+              <GameBoard 
+                board={board}
+                textureBoard={textureBoard}
+                rotationBoard={rotationBoard}
+                themeBoard={themeBoard}
+                animatingLines={animatingLines}
+                currentPiece={currentPiece}
+                gameOver={gameOver}
+              />
             </div>
           </div>
+
+          {/* Right Column - Next Piece */}
+          {!gameOver && (
+            <div className="flex flex-col gap-2">
+              {renderNextPiece()}
+            </div>
+          )}
         </div>
 
-        {/* Game Board */}
-        <div 
-          className="mb-2 flex items-center justify-center" 
-          style={{
-            imageRendering: 'pixelated'
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onDoubleClick={() => rotatePiece()}
-        >
-          <GameBoard 
-            board={board}
-            textureBoard={textureBoard}
-            rotationBoard={rotationBoard}
-            themeBoard={themeBoard}
-            animatingLines={animatingLines}
-            currentPiece={currentPiece}
-            gameOver={gameOver}
-          />
-        </div>
-
-        {/* Game Status */}
-        {(gameOver || paused) && (
+        {/* Game Over Stats */}
+        {gameOver && (
+          <div className="mb-2 text-center bg-black/80 p-4 rounded-lg border-2 border-yellow-600 max-w-md">
+            {isNewHighScore && (
+              <div className="mb-3 p-2 bg-gradient-to-r from-yellow-600 to-amber-600 rounded-lg border-2 border-yellow-400">
+                <p className="text-black font-bold text-lg" style={{ fontFamily: 'monospace' }}>
+                  🎉 NEW HIGH SCORE! 🎉
+                </p>
+              </div>
+            )}
+            <p className="text-yellow-200 font-bold text-xl mb-3" style={{ fontFamily: 'monospace' }}>
+              GAME OVER!
+            </p>
+            <div className="text-yellow-400 text-sm mb-3" style={{ fontFamily: 'monospace' }}>
+              <div>FINAL SCORE: {score.toLocaleString()}</div>
+              <div>HIGH SCORE: {highScore.toLocaleString()}</div>
+              <div>LEVEL: {level}</div>
+              <div>FOOT LONGS: {lines}</div>
+            </div>
+            <div className="text-xs space-y-2" style={{ fontFamily: 'monospace' }}>
+              <div className="text-yellow-300">
+                🟡 MUSTARD: {condimentStats.blocksUsed.mustard} used / {condimentStats.blocksCompleted.mustard} completed
+                {condimentStats.blocksUsed.mustard > 0 && (
+                  <span className="text-yellow-200"> ({Math.round((condimentStats.blocksCompleted.mustard / condimentStats.blocksUsed.mustard) * 100)}%)</span>
+                )}
+              </div>
+              <div className="text-red-300">
+                🔴 KETCHUP: {condimentStats.blocksUsed.ketchup} used / {condimentStats.blocksCompleted.ketchup} completed
+                {condimentStats.blocksUsed.ketchup > 0 && (
+                  <span className="text-red-200"> ({Math.round((condimentStats.blocksCompleted.ketchup / condimentStats.blocksUsed.ketchup) * 100)}%)</span>
+                )}
+              </div>
+              <div className="text-green-300">
+                🟢 RELISH: {condimentStats.blocksUsed.relish} used / {condimentStats.blocksCompleted.relish} completed
+                {condimentStats.blocksUsed.relish > 0 && (
+                  <span className="text-green-200"> ({Math.round((condimentStats.blocksCompleted.relish / condimentStats.blocksUsed.relish) * 100)}%)</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 text-yellow-400 text-xs">
+              TOTAL BLOCKS: {condimentStats.blocksUsed.mustard + condimentStats.blocksUsed.ketchup + condimentStats.blocksUsed.relish} used / {condimentStats.blocksCompleted.mustard + condimentStats.blocksCompleted.ketchup + condimentStats.blocksCompleted.relish} completed
+            </div>
+          </div>
+        )}
+        
+        {/* Paused Status */}
+        {paused && !gameOver && (
           <div className="mb-2 text-center">
             <p className="text-yellow-200 font-bold text-base" style={{ fontFamily: 'monospace' }}>
-              {gameOver ? 'GAME OVER!' : 'PAUSED'}
+              PAUSED
             </p>
           </div>
         )}
@@ -230,21 +360,21 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         {/* Control Buttons */}
         <div className="w-full max-w-xs mb-2">
           <div className="flex justify-center gap-2">
-            {!gameOver ? (
+            {gameOver ? (
+              <button
+                onClick={startGame}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold border-2 border-green-800 transition-colors text-xs"
+                style={{ fontFamily: 'monospace' }}
+              >
+                {currentPiece ? 'NEW GAME' : 'START GAME'}
+              </button>
+            ) : (
               <button
                 onClick={paused ? startGame : pauseGame}
                 className="px-3 py-1 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold border-2 border-red-800 transition-colors text-xs"
                 style={{ fontFamily: 'monospace' }}
               >
                 {paused ? 'RESUME' : 'PAUSE'}
-              </button>
-            ) : (
-              <button
-                onClick={resetGame}
-                className="px-3 py-1 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold border-2 border-green-800 transition-colors text-xs"
-                style={{ fontFamily: 'monospace' }}
-              >
-                NEW GAME
               </button>
             )}
           </div>

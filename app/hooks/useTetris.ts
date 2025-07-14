@@ -20,11 +20,14 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
   );
   const [animatingLines, setAnimatingLines] = useState<number[]>([]);
   const [currentPiece, setCurrentPiece] = useState<Piece | null>(null);
+  const [nextPiece, setNextPiece] = useState<Piece | null>(null);
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [lines, setLines] = useState(0);
   const [gameOver, setGameOver] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [highScore, setHighScore] = useState(0);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   
   // Condiment tracking stats
   const [condimentStats, setCondimentStats] = useState<CondimentStats>({
@@ -43,6 +46,24 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     isRandomModeRef.current = isRandomMode;
     getRandomThemeRef.current = getRandomTheme;
   }, [currentTheme, isRandomMode, getRandomTheme]);
+
+  // Load high score on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const savedHighScore = localStorage.getItem('glizztris-high-score');
+      if (savedHighScore) {
+        setHighScore(parseInt(savedHighScore, 10));
+      }
+    }
+  }, []);
+
+  // Save high score when it changes
+  const saveHighScore = useCallback((newScore: number) => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('glizztris-high-score', newScore.toString());
+    }
+    setHighScore(newScore);
+  }, []);
 
   const createRandomPiece = (): Piece => {
     const pieces = Object.keys(PIECES);
@@ -198,14 +219,21 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
       }, 350);
     }
 
-    // Check game over
-    const newPiece = createRandomPiece();
-    if (!isValidMove(newPiece, 0, 0)) {
-      setGameOver(true);
-    } else {
-      setCurrentPiece(newPiece);
+    // Use next piece as current piece
+    if (nextPiece) {
+      if (!isValidMove(nextPiece, 0, 0)) {
+        setGameOver(true);
+        // Check for high score when game ends
+        if (score > highScore) {
+          setIsNewHighScore(true);
+          saveHighScore(score);
+        }
+      } else {
+        setCurrentPiece(nextPiece);
+        setNextPiece(createRandomPiece());
+      }
     }
-  }, [board, textureBoard, rotationBoard, themeBoard, level, isValidMove]);
+  }, [board, textureBoard, rotationBoard, themeBoard, level, isValidMove, nextPiece, score, highScore, saveHighScore]);
 
   const movePiece = useCallback((deltaX: number, deltaY: number) => {
     if (!currentPiece || gameOver || paused) return;
@@ -269,6 +297,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
       setRotationBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setThemeBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setCurrentPiece(createRandomPiece());
+      setNextPiece(createRandomPiece());
       setScore(0);
       setLevel(1);
       setLines(0);
@@ -276,6 +305,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
         blocksUsed: { mustard: 0, ketchup: 0, relish: 0 },
         blocksCompleted: { mustard: 0, ketchup: 0, relish: 0 }
       });
+      setIsNewHighScore(false);
       setGameOver(false);
       dropTime.current = INITIAL_DROP_TIME;
     }
@@ -311,10 +341,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     return () => clearInterval(interval);
   }, [gameOver, paused, movePiece]);
 
-  // Initialize game
-  useEffect(() => {
-    setCurrentPiece(createRandomPiece());
-  }, []);
+  // Initialize game - removed auto-start
 
   return {
     board,
@@ -323,7 +350,10 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     themeBoard,
     animatingLines,
     currentPiece,
+    nextPiece,
     score,
+    highScore,
+    isNewHighScore,
     level,
     lines,
     gameOver,
