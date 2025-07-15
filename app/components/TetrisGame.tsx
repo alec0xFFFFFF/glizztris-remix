@@ -27,7 +27,8 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     isNewHighScore, 
     level, 
     lines, 
-    gameOver, 
+    gameOver,
+    gameStarted, 
     paused,
     condimentStats,
     movePiece, 
@@ -234,16 +235,90 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
       </div>
 
       {/* Game Area */}
-      <div className="flex-1 flex flex-col items-center justify-start p-1 bg-gradient-to-br from-slate-900 to-slate-800">
-        {/* Score Info */}
-        <div className="w-full max-w-lg mb-2">
-          <div className="flex justify-between text-yellow-400 text-xs font-bold" style={{ fontFamily: 'monospace' }}>
-            <div>SCORE: {score.toLocaleString()}</div>
-            <div>HIGH: {highScore.toLocaleString()}</div>
-            <div>LVL: {level}</div>
-            <div>FOOT LONGS: {lines}</div>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-900 to-slate-800">
+        {!gameStarted ? (
+          /* Landing Screen */
+          <div className="text-center max-w-md space-y-6">
+            {/* Main Logo */}
+            <div className="space-y-2">
+              <div className="text-6xl mb-4">🌭</div>
+              <h1 className="text-4xl font-black bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent" style={{ fontFamily: 'monospace' }}>
+                GLIZZTRIS
+              </h1>
+              <p className="text-lg text-orange-300 font-bold">
+                The Ultimate Hot Dog Tetris Experience!
+              </p>
+            </div>
+
+            {/* Selling Points */}
+            <div className="space-y-4 text-left bg-black/50 p-4 rounded-lg border-2 border-yellow-600">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎯</span>
+                <div>
+                  <div className="text-yellow-400 font-bold text-sm">Stack & Clear Lines</div>
+                  <div className="text-gray-300 text-xs">Build the perfect hot dog with condiment blocks!</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🟡🔴🟢</span>
+                <div>
+                  <div className="text-yellow-400 font-bold text-sm">Three Condiment Themes</div>
+                  <div className="text-gray-300 text-xs">Mustard, Ketchup, and Relish - collect them all!</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📱</span>
+                <div>
+                  <div className="text-yellow-400 font-bold text-sm">Mobile Optimized</div>
+                  <div className="text-gray-300 text-xs">Swipe gestures and touch controls for smooth gameplay</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🏆</span>
+                <div>
+                  <div className="text-yellow-400 font-bold text-sm">Track Your Progress</div>
+                  <div className="text-gray-300 text-xs">Beat your high score and master each condiment!</div>
+                </div>
+              </div>
+            </div>
+
+            {/* High Score Display */}
+            {highScore > 0 && (
+              <div className="bg-gradient-to-r from-amber-900 to-amber-700 p-3 rounded-lg border-2 border-yellow-500">
+                <div className="text-yellow-300 text-sm font-bold">Your Best Score</div>
+                <div className="text-yellow-100 text-2xl font-black" style={{ fontFamily: 'monospace' }}>
+                  {highScore.toLocaleString()}
+                </div>
+                <div className="text-yellow-400 text-xs">Think you can beat it?</div>
+              </div>
+            )}
+
+            {/* Call to Action */}
+            <div className="space-y-3">
+              <button
+                onClick={startGame}
+                className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 active:from-orange-800 active:to-red-800 text-white font-black text-xl py-4 px-8 rounded-lg border-4 border-yellow-500 shadow-lg transform transition-all duration-150 hover:scale-105 active:scale-95"
+                style={{ fontFamily: 'monospace' }}
+              >
+                🚀 START PLAYING 🚀
+              </button>
+              <p className="text-gray-400 text-xs">
+                Swipe to move • Tap to rotate • Space to drop
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          /* Game Screen */
+          <>
+            {/* Score Info */}
+            <div className="w-full max-w-lg mb-2">
+              <div className="flex justify-between text-yellow-400 text-xs font-bold" style={{ fontFamily: 'monospace' }}>
+                <div>SCORE: {score.toLocaleString()}</div>
+                <div>HIGH: {highScore.toLocaleString()}</div>
+                <div>LVL: {level}</div>
+                <div>FOOT LONGS: {lines}</div>
+              </div>
+            </div>
 
         {/* Main Game Container */}
         <div className="flex gap-4 items-start">

@@ -24,8 +24,9 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
   const [score, setScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [lines, setLines] = useState(0);
-  const [gameOver, setGameOver] = useState(true);
+  const [gameOver, setGameOver] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
   const [highScore, setHighScore] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   
@@ -291,7 +292,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
   }, [currentPiece, gameOver, paused, isValidMove, placePiece]);
 
   const startGame = useCallback(() => {
-    if (gameOver) {
+    if (!gameStarted || gameOver) {
       setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setTextureBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
       setRotationBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
@@ -306,12 +307,13 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
         blocksCompleted: { mustard: 0, ketchup: 0, relish: 0 }
       });
       setIsNewHighScore(false);
+      setGameStarted(true);
       setGameOver(false);
       dropTime.current = INITIAL_DROP_TIME;
     }
     setPaused(false);
     lastDrop.current = Date.now();
-  }, [gameOver]);
+  }, [gameOver, gameStarted]);
 
   const pauseGame = useCallback(() => {
     setPaused(true);
@@ -357,6 +359,7 @@ export const useTetris = (currentTheme: CondimentTheme = 'mustard', isRandomMode
     level,
     lines,
     gameOver,
+    gameStarted,
     paused,
     condimentStats,
     movePiece,
