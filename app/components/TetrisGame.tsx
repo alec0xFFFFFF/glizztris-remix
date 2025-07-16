@@ -380,17 +380,19 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
 
         {/* Game Over Stats */}
         {gameOver && (
-          <div className="mb-2 text-center bg-black/80 p-4 rounded-lg border-2 border-yellow-600 max-w-md">
-            {isNewHighScore && (
-              <div className="mb-3 p-2 bg-gradient-to-r from-yellow-600 to-amber-600 rounded-lg border-2 border-yellow-400">
-                <p className="text-black font-bold text-lg" style={{ fontFamily: 'monospace' }}>
-                  🎉 NEW HIGH SCORE! 🎉
-                </p>
-              </div>
-            )}
-            <p className="text-yellow-200 font-bold text-xl mb-3" style={{ fontFamily: 'monospace' }}>
-              GAME OVER!
-            </p>
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="absolute inset-0 bg-black/60" />
+            <div className="relative text-center bg-black/90 p-4 rounded-lg border-2 border-yellow-600 max-w-md w-full">
+              {isNewHighScore && (
+                <div className="mb-3 p-2 bg-gradient-to-r from-yellow-600 to-amber-600 rounded-lg border-2 border-yellow-400">
+                  <p className="text-black font-bold text-lg" style={{ fontFamily: 'monospace' }}>
+                    🎉 NEW HIGH SCORE! 🎉
+                  </p>
+                </div>
+              )}
+              <p className="text-yellow-200 font-bold text-xl mb-3" style={{ fontFamily: 'monospace' }}>
+                GAME OVER!
+              </p>
             <div className="text-yellow-400 text-sm mb-3" style={{ fontFamily: 'monospace' }}>
               <div>FINAL SCORE: {score.toLocaleString()}</div>
               <div>HIGH SCORE: {highScore.toLocaleString()}</div>
@@ -419,6 +421,7 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
             </div>
             <div className="mt-3 text-yellow-400 text-xs">
               TOTAL BLOCKS: {condimentStats.blocksUsed.mustard + condimentStats.blocksUsed.ketchup + condimentStats.blocksUsed.relish} used / {condimentStats.blocksCompleted.mustard + condimentStats.blocksCompleted.ketchup + condimentStats.blocksCompleted.relish} completed
+            </div>
             </div>
           </div>
         )}
@@ -454,6 +457,8 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
             )}
           </div>
         </div>
+          </>
+        )}
       </div>
 
       {/* Touch Controls */}
