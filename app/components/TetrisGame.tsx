@@ -43,6 +43,9 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
   // Touch gesture handling
   const [touchStart, setTouchStart] = React.useState<{ x: number; y: number; time: number } | null>(null);
   const [touchEnd, setTouchEnd] = React.useState<{ x: number; y: number; time: number } | null>(null);
+  
+  // Game over modal state
+  const [showGameOverModal, setShowGameOverModal] = React.useState(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
@@ -154,6 +157,13 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
   }, [handleKeyPress]);
 
   // Don't auto-start - wait for user to start
+  
+  // Show game over modal when game ends
+  useEffect(() => {
+    if (gameOver) {
+      setShowGameOverModal(true);
+    }
+  }, [gameOver]);
 
   // Render next piece preview
   const renderNextPiece = () => {
@@ -177,7 +187,6 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
     }
     
     const pieceHeight = maxY - minY + 1;
-    const pieceWidth = maxX - minX + 1;
     
     return (
       <div className="bg-black/50 p-2 rounded-lg border-2 border-yellow-600">
@@ -389,10 +398,17 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
         </div>
 
         {/* Game Over Stats */}
-        {gameOver && (
+        {gameOver && showGameOverModal && (
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-black/60" onClick={() => setShowGameOverModal(false)} />
             <div className="relative text-center bg-black/90 p-4 rounded-lg border-2 border-yellow-600 max-w-md w-full">
+              <button
+                onClick={() => setShowGameOverModal(false)}
+                className="absolute top-2 right-2 text-yellow-400 hover:text-yellow-300 text-xl font-bold"
+                aria-label="Close"
+              >
+                ×
+              </button>
               {isNewHighScore && (
                 <div className="mb-3 p-2 bg-gradient-to-r from-yellow-600 to-amber-600 rounded-lg border-2 border-yellow-400">
                   <p className="text-black font-bold text-lg" style={{ fontFamily: 'monospace' }}>
@@ -450,7 +466,10 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
           <div className="flex justify-center gap-2">
             {gameOver ? (
               <button
-                onClick={startGame}
+                onClick={() => {
+                  setShowGameOverModal(false);
+                  startGame();
+                }}
                 className="px-3 py-1 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold border-2 border-green-800 transition-colors text-xs"
                 style={{ fontFamily: 'monospace' }}
               >
