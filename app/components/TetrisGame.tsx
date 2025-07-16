@@ -159,56 +159,66 @@ export const TetrisGame = forwardRef<TetrisGameRef, { onClose?: () => void }>(
   const renderNextPiece = () => {
     if (!nextPiece) return null;
     
-    const previewGrid = Array(4).fill(null).map(() => Array(4).fill(null));
+    // Find the actual bounds of the piece (non-zero cells)
+    let minY = nextPiece.shape.length;
+    let maxY = -1;
+    let minX = nextPiece.shape[0].length;
+    let maxX = -1;
     
-    // Center the piece in the preview
-    const offsetY = Math.floor((4 - nextPiece.shape.length) / 2);
-    const offsetX = Math.floor((4 - nextPiece.shape[0].length) / 2);
+    for (let y = 0; y < nextPiece.shape.length; y++) {
+      for (let x = 0; x < nextPiece.shape[y].length; x++) {
+        if (nextPiece.shape[y][x]) {
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+          minX = Math.min(minX, x);
+          maxX = Math.max(maxX, x);
+        }
+      }
+    }
+    
+    const pieceHeight = maxY - minY + 1;
+    const pieceWidth = maxX - minX + 1;
     
     return (
       <div className="bg-black/50 p-2 rounded-lg border-2 border-yellow-600">
         <div className="text-yellow-400 text-xs font-bold mb-1 text-center" style={{ fontFamily: 'monospace' }}>
           NEXT
         </div>
-        <div className="grid grid-rows-4 gap-0.5">
-          {previewGrid.map((row, y) => (
-            <div key={y} className="flex gap-0.5">
-              {row.map((_, x) => {
-                const pieceY = y - offsetY;
-                const pieceX = x - offsetX;
-                const isPartOfPiece = 
-                  pieceY >= 0 && 
-                  pieceY < nextPiece.shape.length && 
-                  pieceX >= 0 && 
-                  pieceX < nextPiece.shape[0].length && 
-                  nextPiece.shape[pieceY][pieceX];
-                
-                return (
-                  <div
-                    key={x}
-                    className={`w-4 h-4 ${isPartOfPiece ? 'border border-gray-600' : ''}`}
-                    style={{ imageRendering: 'pixelated' }}
-                  >
-                    {isPartOfPiece && (
+        <div className="flex items-center justify-center" style={{ minHeight: '64px' }}>
+          <div className="grid gap-0.5" style={{ gridTemplateRows: `repeat(${pieceHeight}, 1fr)` }}>
+            {nextPiece.shape.slice(minY, maxY + 1).map((row, y) => (
+              <div key={y} className="flex gap-0.5">
+                {row.slice(minX, maxX + 1).map((cell, x) => {
+                  const actualY = y + minY;
+                  const actualX = x + minX;
+                  
+                  return cell ? (
+                    <div
+                      key={x}
+                      className="w-4 h-4 border border-gray-600"
+                      style={{ imageRendering: 'pixelated' }}
+                    >
                       <img
                         src={getThemedTexturePath(
-                          nextPiece.textures[pieceY][pieceX],
+                          nextPiece.textures[actualY][actualX],
                           nextPiece.theme || currentTheme
                         )}
                         alt="Next piece"
                         className="w-full h-full object-cover"
                         style={{ 
                           imageRendering: 'pixelated',
-                          transform: nextPiece.rotations[pieceY][pieceX] ? 
-                            `rotate(${nextPiece.rotations[pieceY][pieceX]}deg)` : undefined
+                          transform: nextPiece.rotations[actualY][actualX] ? 
+                            `rotate(${nextPiece.rotations[actualY][actualX]}deg)` : undefined
                         }}
                       />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                    </div>
+                  ) : (
+                    <div key={x} className="w-4 h-4" />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
